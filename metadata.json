@@ -1,0 +1,6 @@
+{
+  "name": "스피드 모니터링 & 셔터 연동 관제 시스템",
+  "description": "속도 검출 레이더 및 DFS 전광판, 고속 카메라 셔터링 연동 실시간 관제 시스템",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
