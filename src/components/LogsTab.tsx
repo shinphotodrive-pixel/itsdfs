@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Trash2, ShieldAlert } from 'lucide-react';
+import { Search, Trash2, ShieldAlert, Download } from 'lucide-react';
 import { LogEntry } from '../types';
 
 interface LogsTabProps {
@@ -34,6 +34,49 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, onClearLogs, onOpenModal
     if (window.confirm('모든 통과 및 과속 단속 기록을 삭제하시겠습니까?')) {
       onClearLogs();
     }
+  };
+
+  const exportToCSV = () => {
+    if (filteredLogs.length === 0) return;
+
+    const headers = [
+      '기록 ID',
+      '감지/단속 시각',
+      '차량 번호',
+      '측정 속도 (km/h)',
+      '도로 제한속도 (km/h)',
+      '초과 속도 (km/h)',
+      '단속 상태',
+      '적용 단속 카메라',
+      '스냅샷 캡처 여부'
+    ];
+
+    const rows = filteredLogs.map((log) => [
+      log.id,
+      `"${log.timestamp}"`,
+      `"${log.plate}"`,
+      log.speed,
+      log.limit,
+      log.isOverspeed ? log.speed - log.limit : 0,
+      `"${log.isOverspeed ? '속도위반' : '정상통과'}"`,
+      `"${log.camera.replace(/"/g, '""')}"`,
+      `"${log.imageUrl ? '캡처 완료' : '미캡처'}"`
+    ]);
+
+    const csvContent =
+      '\uFEFF' +
+      [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const now = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.setAttribute('download', `speed_enforcement_logs_${now}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -71,20 +114,38 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, onClearLogs, onOpenModal
           </select>
         </div>
 
-        <button
-          id="clear-logs-btn"
-          type="button"
-          onClick={handleClear}
-          disabled={logs.length === 0}
-          className={`text-xs border px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition ${
-            logs.length === 0
-              ? 'text-slate-600 border-slate-800 bg-slate-950/20 cursor-not-allowed'
-              : 'text-red-400 hover:text-red-300 border-red-900/60 bg-red-950/40 hover:bg-red-900/30 cursor-pointer'
-          }`}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>로그 전체 삭제 ({logs.length})</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            id="export-csv-btn"
+            type="button"
+            onClick={exportToCSV}
+            disabled={filteredLogs.length === 0}
+            className={`text-xs border px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition ${
+              filteredLogs.length === 0
+                ? 'text-slate-600 border-slate-800 bg-slate-950/20 cursor-not-allowed'
+                : 'text-emerald-400 hover:text-emerald-300 border-emerald-900/60 bg-emerald-950/40 hover:bg-emerald-900/30 cursor-pointer shadow-sm'
+            }`}
+            title="현재 표시된 로그 데이터를 CSV 파일로 다운로드합니다"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>CSV 내보내기 ({filteredLogs.length})</span>
+          </button>
+
+          <button
+            id="clear-logs-btn"
+            type="button"
+            onClick={handleClear}
+            disabled={logs.length === 0}
+            className={`text-xs border px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition ${
+              logs.length === 0
+                ? 'text-slate-600 border-slate-800 bg-slate-950/20 cursor-not-allowed'
+                : 'text-red-400 hover:text-red-300 border-red-900/60 bg-red-950/40 hover:bg-red-900/30 cursor-pointer'
+            }`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>로그 전체 삭제 ({logs.length})</span>
+          </button>
+        </div>
       </div>
 
       {/* Logs Table */}

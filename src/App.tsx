@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { TabType, LogEntry } from './types';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
@@ -10,7 +10,7 @@ import { SnapshotModal } from './components/SnapshotModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('tab-monitor');
-  const [roadLimit, setRoadLimit] = useState<number>(30);
+  const [roadLimit, setRoadLimit] = useState<number>(20);
   const [selectedCamera, setSelectedCamera] = useState<string>('TNO-7180RLP');
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(true);
 
@@ -22,6 +22,11 @@ export default function App() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [activeModalItem, setActiveModalItem] = useState<LogEntry | null>(null);
   const [isFlashing, setIsFlashing] = useState<boolean>(false);
+
+  // Real-time Header Violation Alert
+  const [isViolationAlert, setIsViolationAlert] = useState<boolean>(false);
+  const [lastViolationSpeed, setLastViolationSpeed] = useState<number | null>(null);
+  const alertTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleToggleSound = useCallback(() => {
     setIsSoundEnabled((prev) => !prev);
@@ -36,6 +41,14 @@ export default function App() {
 
   const handleAddLog = useCallback((entry: LogEntry) => {
     setLogs((prev) => [entry, ...prev]);
+    if (entry.isOverspeed) {
+      setLastViolationSpeed(entry.speed);
+      setIsViolationAlert(true);
+      if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+      alertTimerRef.current = setTimeout(() => {
+        setIsViolationAlert(false);
+      }, 3500);
+    }
   }, []);
 
   const handleClearLogs = useCallback(() => {
@@ -63,8 +76,13 @@ export default function App() {
         }`}
       />
 
-      {/* Top Header */}
-      <Header isSoundEnabled={isSoundEnabled} onToggleSound={handleToggleSound} />
+      {/* Top Header with live overspeed violation alert indicator */}
+      <Header
+        isSoundEnabled={isSoundEnabled}
+        onToggleSound={handleToggleSound}
+        isViolationAlert={isViolationAlert}
+        lastViolationSpeed={lastViolationSpeed}
+      />
 
       {/* Navigation (Desktop & Mobile) */}
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />

@@ -15,6 +15,7 @@ import {
 import { Vehicle, LogEntry } from '../types';
 import { generateSnapshotImage, generateRandomKoreanPlate } from '../utils/snapshotGenerator';
 import { playRadarBeep, playShutterClick } from '../utils/audio';
+import { EnforcementPoleSign } from './EnforcementPoleSign';
 
 const CAR_COLORS = [
   '#ef4444',
@@ -340,12 +341,11 @@ export const MonitorTab: React.FC<MonitorTabProps> = ({
 
   // Zone Label calculation
   const getZoneLabel = () => {
-    if (roadLimit === 30) return '어린이 보호구역';
+    if (roadLimit === 20) return '보행자 우선구역 (20km/h)';
+    if (roadLimit === 30) return '어린이 보호구역 (스쿨존 30km/h)';
     if (roadLimit === 50) return '도시부 도로 (안전속도 5030)';
-    return '일반 간선 국도';
+    return '일반 간선 국도 (80km/h)';
   };
-
-  const isCurrentOverspeed = displayedSpeed > roadLimit;
 
   return (
     <div className="space-y-4">
@@ -408,41 +408,19 @@ export const MonitorTab: React.FC<MonitorTabProps> = ({
 
       {/* DFS Sign & Live Track Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* DFS Digital Signboard View */}
-        <div id="dfs-sign-card" className="bg-slate-900 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative min-h-[320px] shadow-lg">
-          {/* Top Zone Banner */}
-          <div className="w-full bg-amber-500 text-slate-950 font-black text-center py-2 rounded-lg text-base tracking-wider shadow">
-            <span>{getZoneLabel()}</span>
+        {/* Authentic Korean Speed Enforcement Pole Housing (Matches uploaded image) */}
+        <div id="dfs-sign-card" className="bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 flex flex-col items-center justify-between shadow-lg">
+          {/* Top Zone Label Badge */}
+          <div className="w-full bg-slate-950/80 border border-slate-800 text-amber-400 font-bold text-center py-1.5 px-3 rounded-xl text-xs tracking-wider mb-2 flex items-center justify-between">
+            <span className="font-sans text-slate-300">구역 구분:</span>
+            <span className="text-amber-400 font-extrabold">{getZoneLabel()}</span>
           </div>
 
-          {/* Speed Limit Circular Sign */}
-          <div className="my-3 relative flex items-center justify-center">
-            <div className="w-24 h-24 rounded-full border-[7px] border-red-600 bg-white flex items-center justify-center shadow-lg">
-              <span className="text-3xl font-black text-slate-900 tracking-tight">{roadLimit}</span>
-            </div>
-          </div>
-
-          {/* DFS Digital Speed LED Panel */}
-          <div className="w-full bg-black/95 border-2 border-slate-800 rounded-xl p-3 text-center shadow-inner">
-            <p className="text-[11px] text-amber-400/80 tracking-widest font-bold mb-1">당신의 현재 속도</p>
-            <div
-              id="dfs-speed-display"
-              className={`font-digital text-5xl font-black tracking-wider transition-all duration-150 py-1 ${
-                isCurrentOverspeed
-                  ? 'text-red-500 animate-pulse drop-shadow-[0_0_12px_rgba(239,68,68,0.7)]'
-                  : 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]'
-              }`}
-            >
-              {displayedSpeed === 0 ? '00' : displayedSpeed < 10 ? `0${displayedSpeed}` : displayedSpeed}
-            </div>
-            <p
-              className={`text-xs font-bold mt-1 ${
-                isCurrentOverspeed ? 'text-red-400' : 'text-emerald-400'
-              }`}
-            >
-              {isCurrentOverspeed ? '속도 위반! 서행하세요' : '안전 운행 중'}
-            </p>
-          </div>
+          <EnforcementPoleSign
+            speed={displayedSpeed}
+            roadLimit={roadLimit}
+            isShutterActive={pulseActive}
+          />
 
           {/* Alarm Signal Indicator */}
           <div className="w-full mt-3 flex items-center justify-between text-xs text-slate-400 bg-slate-950/90 px-3 py-2 rounded-lg border border-slate-800">
@@ -542,7 +520,7 @@ export const MonitorTab: React.FC<MonitorTabProps> = ({
           <div className="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs gap-2">
             <div className="flex items-center space-x-2">
               <span className="text-slate-400 font-medium">제한속도 설정:</span>
-              {[30, 50, 80].map((limit) => (
+              {[20, 30, 50, 80].map((limit) => (
                 <button
                   key={limit}
                   id={`limit-btn-${limit}`}
